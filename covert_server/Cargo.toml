@@ -1,0 +1,12 @@
+cargo-features = ["per-package-target"]
+[package]
+name = "covert_server"
+forced-target = "x86_64-unknown-linux-gnu"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.19.2", features = ["full"] }
+async-trait = "0.1.56"
