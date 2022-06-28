@@ -6,11 +6,17 @@ systems for Cobalt Strike.  There are two crates in this project, one for client
 have functions for spawning and communicating with beacon instances, and one for servers
 which have functions for connecting to the teamserver and starting a session.
 
-## Building ##
+## Installing ##
 
-To build the artifacts
+To install the example client
 ```bash
-$cargo build
+$ LHOST=localhost:5555 cargo install covert_client --target x86_64-pc-windows-gnu --example client
+$ client.exe
+```
+To install the example server
+```bash
+$ cargo install covert_server --example server
+$ server
 ```
 
 ## Dependencies ##

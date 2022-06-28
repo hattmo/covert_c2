@@ -4,3 +4,10 @@ members = [
     "covert_client",
     "covert_server"
 ]
+
+
+[profile.release]
+opt-level = "s"
+strip = "symbols"
+lto = true
+panic = "abort"
