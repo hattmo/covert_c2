@@ -1,7 +1,5 @@
-cargo-features = ["per-package-target"]
 [package]
 name = "covert_client"
-forced-target = "x86_64-pc-windows-gnu"
 version = "0.1.0"
 authors = ["Matthew Howard <matthew@hattmo.com>"]
 edition = "2021"
