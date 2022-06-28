@@ -2,6 +2,8 @@ use std::{
     ffi::c_void,
     io::{Error, ErrorKind, Read, Write},
     mem, ptr,
+    thread::sleep,
+    time::Duration,
 };
 use windows::{
     core::PCSTR,
@@ -136,18 +138,27 @@ pub fn create_implant_from_buf(
         // if !WaitNamedPipeA(PCSTR(full_pipename.as_ptr()), 0).as_bool() {
         //     return Err(Error::new(ErrorKind::TimedOut, "Failed waiting for pipe"));
         // }
-        let sock_handle = CreateFileA(
-            PCSTR(full_pipename.as_ptr()),
-            FILE_GENERIC_READ | FILE_GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            ptr::null(),
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            HANDLE::default(),
-        )?;
-
-        return Ok(Implant {
-            handle: sock_handle,
-        });
+        let mut count = 0;
+        loop {
+            if let Ok(sock_handle) = CreateFileA(
+                PCSTR(full_pipename.as_ptr()),
+                FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                ptr::null(),
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                HANDLE::default(),
+            ) {
+                return Ok(Implant {
+                    handle: sock_handle,
+                });
+            } else {
+                count += 1;
+                if count > 10 {
+                    return Err(Error::from(ErrorKind::Other));
+                }
+                sleep(Duration::from_secs(1));
+            };
+        }
     }
 }
