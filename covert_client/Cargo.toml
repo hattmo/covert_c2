@@ -3,7 +3,13 @@ cargo-features = ["per-package-target"]
 name = "covert_client"
 forced-target = "x86_64-pc-windows-gnu"
 version = "0.1.0"
+authors = ["Matthew Howard <matthew@hattmo.com>"]
 edition = "2021"
+description = "Helper library for creating external C2 clients for Cobalt Strike"
+homepage = "https://github.com/hattmo/covert_c2"
+repository = "https://github.com/hattmo/covert_c2"
+license = "GPL-3.0-or-later"
+keywords = ["security","cobaltstrike"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
