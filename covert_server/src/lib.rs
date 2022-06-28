@@ -14,7 +14,10 @@ pub trait CSFrame {
 }
 
 #[async_trait]
-impl CSFrame for TcpStream {
+impl<T> CSFrame for T
+where
+    T: AsyncReadExt + AsyncWriteExt + std::marker::Unpin + std::marker::Send,
+{
     async fn write_frame(
         &mut self,
         data: &[u8],
@@ -32,7 +35,7 @@ impl CSFrame for TcpStream {
     }
 }
 
-pub async fn start_implant_session<'a>(
+pub async fn start_implant_session(
     ts_address: &str,
     arch: &str,
     pipename: &str,

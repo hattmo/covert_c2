@@ -135,9 +135,6 @@ pub fn create_implant_from_buf(
             &mut threadid as *mut u32,
         )?;
 
-        // if !WaitNamedPipeA(PCSTR(full_pipename.as_ptr()), 0).as_bool() {
-        //     return Err(Error::new(ErrorKind::TimedOut, "Failed waiting for pipe"));
-        // }
         let mut count = 0;
         loop {
             if let Ok(sock_handle) = CreateFileA(
