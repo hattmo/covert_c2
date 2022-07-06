@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 use std::{
     ffi::c_void,
     io::{Error, ErrorKind, Read, Write},
