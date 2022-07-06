@@ -17,21 +17,26 @@ use tokio::{
 
 /// Reads and writes cobaltstrike frames from an asynchronous source.
 #[async_trait]
-pub trait CSFrame {
+pub trait CSFrameRead {
     /// Write a single frame.
-    async fn write_frame(
-        &mut self,
-        data: &[u8],
-    ) -> Result<(), Box<dyn std::error::Error>>;
+
 
     /// Reads a single frame.
     async fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
 }
 
 #[async_trait]
-impl<T> CSFrame for T
+pub trait CSFrameWrite {
+    async fn write_frame(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), Box<dyn std::error::Error>>;
+}
+
+#[async_trait]
+impl<T> CSFrameWrite for T
 where
-    T: AsyncReadExt + AsyncWriteExt + std::marker::Unpin + std::marker::Send,
+    T: AsyncWriteExt + std::marker::Unpin + std::marker::Send,
 {
     async fn write_frame(
         &mut self,
@@ -42,6 +47,10 @@ where
         self.write_all(data).await?;
         return Ok(());
     }
+}
+#[async_trait]
+impl<t> CSFrameRead for T where T: AsyncReadExt + std::marker::Unpin + std::marker::Send
+{
     async fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let size = self.read_u32_le().await?.try_into()?;
         let mut buf: Vec<u8> = vec![0; size];

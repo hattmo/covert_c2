@@ -86,14 +86,16 @@ impl Write for Implant {
     }
 }
 
-pub trait CSFrame {
+pub trait CSFrameRead {
     fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+}
+pub trait CSFrameWrite {
     fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>>;
 }
 
-impl<T> CSFrame for T
+impl<T> CSFrameRead for T
 where
-    T: Read + Write,
+    T: Read,
 {
     fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut size_buf = [0; 4];
@@ -103,7 +105,11 @@ where
         self.read_exact(data.as_mut_slice())?;
         return Ok(data);
     }
-
+}
+impl<T> CSFrameWrite for T
+where
+    T: Write,
+{
     fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
         let size: u32 = data.len().try_into()?;
         self.write_all(&size.to_le_bytes())?;

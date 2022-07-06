@@ -1,6 +1,6 @@
 [package]
 name = "covert_server"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Matthew Howard <matthew@hattmo.com>"]
 edition = "2021"
 description = "Helper library for creating external C2 servers for Cobalt Strike"
