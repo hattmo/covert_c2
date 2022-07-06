@@ -49,7 +49,9 @@ where
     }
 }
 #[async_trait]
-impl<t> CSFrameRead for T where T: AsyncReadExt + std::marker::Unpin + std::marker::Send
+impl<T> CSFrameRead for T
+where
+    T: AsyncReadExt + std::marker::Unpin + std::marker::Send,
 {
     async fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let size = self.read_u32_le().await?.try_into()?;
