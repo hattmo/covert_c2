@@ -2,7 +2,7 @@ cargo-features = ["per-package-target"]
 
 [package]
 name = "covert_client"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Matthew Howard <matthew@hattmo.com>"]
 edition = "2021"
 description = "Helper library for creating external C2 clients for Cobalt Strike"
