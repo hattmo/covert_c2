@@ -1,4 +1,4 @@
-use covert_client::CSFrame;
+use covert_client::{CSFrameRead, CSFrameWrite};
 use std::net::TcpStream;
 
 fn main() {

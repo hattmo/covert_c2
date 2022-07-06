@@ -1,3 +1,5 @@
+cargo-features = ["per-package-target"]
+
 [package]
 name = "covert_client"
 version = "0.1.2"
@@ -8,6 +10,7 @@ homepage = "https://github.com/hattmo/covert_c2"
 repository = "https://github.com/hattmo/covert_c2"
 license = "GPL-3.0-or-later"
 keywords = ["security","cobaltstrike"]
+default-target = "x86_64-pc-windows-gnu"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,5 +1,5 @@
 use clap::Parser;
-use covert_server::CSFrame;
+use covert_server::{CSFrameRead, CSFrameWrite};
 use tokio::{
     net::{TcpListener, TcpStream},
     task, try_join,
