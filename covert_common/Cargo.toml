@@ -1,17 +1,20 @@
 [package]
-name = "covert_server"
-version = "0.1.2"
+name = "covert_common"
+version = "0.1.0"
 authors = ["Matthew Howard <matthew@hattmo.com>"]
 edition = "2021"
-description = "Helper library for creating external C2 servers for Cobalt Strike"
+description = "Helper library for creating covert tunnels on an unreliable channel"
 homepage = "https://github.com/hattmo/covert_c2"
 repository = "https://github.com/hattmo/covert_c2"
 license = "GPL-3.0-or-later"
 keywords = ["security","cobaltstrike"]
 
 [dependencies]
-tokio = { version = "1.19", features = ["full"] }
-async-trait = "0.1.56"
+bincode_aes = "1.0.1"
+
+[dependencies.serde]
+version = "1.0.138"
+features = ["derive"]
 
 [dev-dependencies]
-clap = {version = "3.2", features= ["derive"]}
+rand = "0.8.5"

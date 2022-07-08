@@ -12,7 +12,6 @@ license = "GPL-3.0-or-later"
 keywords = ["security","cobaltstrike"]
 default-target = "x86_64-pc-windows-gnu"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 

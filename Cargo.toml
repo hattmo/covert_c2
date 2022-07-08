@@ -2,7 +2,8 @@
 
 members = [
     "covert_client",
-    "covert_server"
+    "covert_server",
+    "covert_common"
 ]
 
 
