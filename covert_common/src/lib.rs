@@ -1,9 +1,19 @@
 #![warn(missing_docs)]
 #![feature(slice_as_chunks)]
 
+//! Helper utilities for creating [external c2][1] systems for [cobaltstrike][2].
+//!
+//! ![C2](https://i.ibb.co/Cszd81H/externalc2.png)
+//!
+//!
+//!
+//![1]: https://hstechdocs.helpsystems.com/manuals/cobaltstrike/current/userguide/content/topics/listener-infrastructue_external-c2.htm
+//! [2]: https://www.cobaltstrike.com/
+
+use anyhow::anyhow;
 use bincode_aes::{create_key, with_key, BincodeCryptor};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::VecDeque, error::Error};
+use std::collections::VecDeque;
 
 #[derive(Deserialize, Serialize)]
 struct CovertPacket {
@@ -27,6 +37,12 @@ impl CovertPacket {
     }
 }
 
+/// Establishes a covert channel handler.  this struct enables sending series of messages
+/// that are broken into small encrypted packets.  messages are put into the channel with
+/// put_message and then sent with get_packet.  In the reverse direction packets are
+/// read into the channel with put_packets and coverted to messages with get_message.
+/// packets need to be sent in both directions to "syn/ack" to confirm messages are
+/// transmitted in full.
 pub struct CovertChannel<T>
 where
     T: DeserializeOwned + Serialize,
@@ -44,8 +60,10 @@ impl<T> CovertChannel<T>
 where
     T: DeserializeOwned + Serialize,
 {
-    pub fn new(key: Vec<u8>) -> Result<CovertChannel<T>, Box<dyn Error>> {
-        let cryptor = with_key(create_key(key).or(Err("bad key"))?);
+    /// Create a new covert channel with the provided 32 byte aes key.
+    pub fn new(key: Vec<u8>) -> Result<CovertChannel<T>, anyhow::Error> {
+        let cryptor =
+            with_key(create_key(key).or(Err(anyhow!("Failed to create key")))?);
         Ok(CovertChannel {
             out_bound_packet_cache: VecDeque::new(),
             in_bound_packet_cache: VecDeque::new(),
@@ -57,11 +75,18 @@ where
         })
     }
 
+    /// get a complete message T from this channel.  if there are now messages sent completely
+    /// yet then the Option is None.
     pub fn get_message(&mut self) -> Option<T> {
         self.message_cache.pop_front()
     }
-    pub fn put_message(&mut self, msg: T) -> Result<(), Box<dyn Error>> {
-        let res = self.cryptor.serialize(&msg)?;
+
+    /// send a message through this channel.  
+    pub fn put_message(&mut self, msg: T) -> Result<(), anyhow::Error> {
+        let res = self
+            .cryptor
+            .serialize(&msg)
+            .or(Err(anyhow!("Failed to serialize")))?;
         let (chunks, remainder) = res.as_chunks::<20>();
         for chunk in chunks {
             let new_packet = CovertPacket::new(self.out_count, false, chunk.as_slice());
@@ -73,7 +98,12 @@ where
         self.out_count += 1;
         Ok(())
     }
-    pub fn get_packet(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
+
+    /// get the next packet that needs to be sent for this channel.  Even if there are
+    /// no messages to be sent a call to get_packet with return successfully.  empty packets
+    /// still contain synchronizing information and should be sent regularly.  additionally
+    /// the receiving end of the channel accounts for packets that contain no message data.
+    pub fn get_packet(&mut self) -> Result<Vec<u8>, anyhow::Error> {
         if self.out_bound_packet_cache.len() == 0 {
             self.out_bound_packet_cache.push_front(CovertPacket::new(
                 self.out_count,
@@ -84,13 +114,18 @@ where
         }
         let out = self.out_bound_packet_cache.front_mut().unwrap();
         out.set_want(self.in_syn);
-        self.cryptor.serialize(out)
+        self.cryptor
+            .serialize(out)
+            .or(Err(anyhow!("Failed to serialize")))
     }
 
-    pub fn put_packet(&mut self, pkt: &[u8]) -> Result<bool, Box<dyn Error>> {
+    /// put packets into this channel to be decoded.  When a complete packet is ready to
+    /// be read from the channel put packet will contain true in the Ok result.
+    pub fn put_packet(&mut self, pkt: &[u8]) -> Result<bool, anyhow::Error> {
         let in_packet = self
             .cryptor
-            .deserialize::<CovertPacket>(&mut pkt.to_vec())?;
+            .deserialize::<CovertPacket>(&mut pkt.to_vec())
+            .or(Err(anyhow!("Failed to deserialize")))?;
 
         // Clear packets in the out_cache that have been confirmed
         self.out_syn = Ord::max(self.out_syn, in_packet.want);
@@ -109,7 +144,10 @@ where
                     .map(|i| i.payload)
                     .flatten()
                     .collect::<Vec<u8>>();
-                let in_message = self.cryptor.deserialize::<T>(&mut payload)?;
+                let in_message = self
+                    .cryptor
+                    .deserialize::<T>(&mut payload)
+                    .or(Err(anyhow!("Failed to deserialize")))?;
                 self.message_cache.push_back(in_message);
                 return Ok(true);
             } else {

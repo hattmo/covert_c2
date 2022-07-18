@@ -12,6 +12,7 @@ keywords = ["security","cobaltstrike"]
 [dependencies]
 tokio = { version = "1.19", features = ["full"] }
 async-trait = "0.1.56"
+anyhow = "1.0"
 
 [dev-dependencies]
 clap = {version = "3.2", features= ["derive"]}
