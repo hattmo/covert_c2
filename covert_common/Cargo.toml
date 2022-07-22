@@ -11,13 +11,8 @@ version = "0.1.0"
 
 [dependencies]
 aes = {version = "0.8"}
-cipher = {version = "0.4.3", features = ["block-padding","alloc"]}
 anyhow = "1.0"
-bincode_aes = "1.0.1"
-
-[dependencies.serde]
-features = ["derive"]
-version = "1.0.138"
-
-[dev-dependencies]
-rand = "0.8.5"
+bincode = "1.3"
+cipher = {version = "0.4.3", features = ["block-padding", "alloc"]}
+rand = "0.8"
+serde = {version = "1.0.138", features = ["derive"]}
