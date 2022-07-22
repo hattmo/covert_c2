@@ -25,7 +25,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 #[derive(Deserialize, Serialize, Debug)]
 struct CovertPacket {
-    nonce: u8,
+    hash: u8,
     stream: u16,
     syn: u32,
     want: u32,
@@ -36,14 +36,17 @@ struct CovertPacket {
 
 impl CovertPacket {
     fn new(stream: u16, syn: u32, last: bool, payload: &[u8]) -> Self {
+        let pad = vec![0u8; 30 - payload.len()];
+        let pad: Vec<u8> = pad.iter().map(|_| random()).collect();
+
         Self {
+            hash: 0,
             stream,
-            nonce: 0,
             syn,
             want: 0,
             last,
             payload: payload.to_vec(),
-            pad: vec![0; 30 - payload.len()],
+            pad,
         }
     }
 }
@@ -105,7 +108,7 @@ where
         let encode = self.encoder;
         let stream = self.get_stream_by_id(stream_id);
         let res = encode.serialize(&msg).expect("Failed to serialize");
-        let (parts, end) = res.as_chunks::<30>();
+        let (parts, end) = res.as_chunks::<29>();
         for part in parts {
             let new_packet =
                 CovertPacket::new(stream_id, stream.out_count, false, part.as_slice());
@@ -142,10 +145,10 @@ where
             .front_mut()
             .expect("Should always have a packet");
         out.want = stream.in_syn;
-        out.nonce = random();
-        let tmp = encode.serialize(out).expect("Should always serialize");
+        let mut tmp = encode.serialize(out).expect("Should always serialize");
+        let hash = crc32fast::hash(&tmp).to_le_bytes()[0];
+        tmp[0] = hash;
         let done = self.engine.encrypt_padded_vec::<Pkcs7>(&tmp);
-        println!("encrypt: {:?} -- {:?}", done, done.len());
         return done;
     }
 
@@ -153,8 +156,15 @@ where
     /// be read from the channel put packet will contain true in the Ok result.
     pub fn put_packet(&mut self, pkt: &[u8]) -> Option<u16> {
         let encode = self.encoder;
-        let tmp = self.engine.decrypt_padded_vec::<Pkcs7>(pkt).ok()?;
+        let mut tmp = self.engine.decrypt_padded_vec::<Pkcs7>(pkt).ok()?;
+        let hash = tmp[0];
+        tmp[0] = 0;
+        let actual = crc32fast::hash(&tmp).to_le_bytes()[0];
+        if hash != actual {
+            return None;
+        };
         let in_packet = encode.deserialize::<CovertPacket>(&tmp).ok()?;
+
         let stream_id = in_packet.stream;
         let mut stream = self.get_stream_by_id(stream_id);
 
