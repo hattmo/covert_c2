@@ -1,0 +1,21 @@
+[package]
+authors = ["Matthew Howard <matthew@hattmo.com>"]
+description = "Helper library for creating covert tunnels on an unreliable channel"
+edition = "2021"
+homepage = "https://github.com/hattmo/covert_c2"
+keywords = ["security", "cobaltstrike"]
+license = "GPL-3.0-or-later"
+name = "covert_common"
+repository = "https://github.com/hattmo/covert_c2"
+version = "0.1.3"
+
+[dependencies]
+aes = {version = "0.8"}
+bincode = "1"
+cipher = {version = "0.4.3", features = ["block-padding", "alloc"]}
+crc32fast = "1"
+rand = "0.8"
+serde = {version = "1", features = ["derive"]}
+
+[dev-dependencies]
+log = "0.4"

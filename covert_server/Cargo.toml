@@ -1,0 +1,18 @@
+[package]
+authors = ["Matthew Howard <matthew@hattmo.com>"]
+description = "Helper library for creating external C2 servers for Cobalt Strike"
+edition = "2021"
+homepage = "https://github.com/hattmo/covert_c2"
+keywords = ["security", "cobaltstrike"]
+license = "GPL-3.0-or-later"
+name = "covert_server"
+repository = "https://github.com/hattmo/covert_c2"
+version = "0.1.4"
+
+[dependencies]
+anyhow = "1"
+async-trait = "0.1"
+tokio = {version = "1", features = ["full"]}
+
+[dev-dependencies]
+clap = {version = "3", features = ["derive"]}

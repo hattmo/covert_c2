@@ -1,0 +1,14 @@
+[workspace]
+
+members = [
+    "covert_client",
+    "covert_server",
+    "covert_common"
+]
+
+
+[profile.release]
+opt-level = "s"
+strip = "symbols"
+lto = true
+panic = "abort"

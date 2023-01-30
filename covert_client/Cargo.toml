@@ -1,0 +1,25 @@
+cargo-features = ["per-package-target"]
+
+[package]
+authors = ["Matthew Howard <matthew@hattmo.com>"]
+default-target = "x86_64-pc-windows-gnu"
+description = "Helper library for creating external C2 clients for Cobalt Strike"
+edition = "2021"
+homepage = "https://github.com/hattmo/covert_c2"
+keywords = ["security", "cobaltstrike"]
+license = "GPL-3.0-or-later"
+name = "covert_client"
+repository = "https://github.com/hattmo/covert_c2"
+version = "0.1.5"
+
+[dependencies.windows]
+features = [
+  "Win32_System_Threading",
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_Memory",
+  "Win32_System_Pipes",
+  "Win32_Storage_FileSystem",
+  "Win32_System_IO",
+]
+version = "0.39.0"
